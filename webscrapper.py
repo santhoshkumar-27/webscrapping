@@ -3,10 +3,10 @@ from bs4 import BeautifulSoup
 
 
 class WebDataInfo:
-    def __init__(self, title, content, link):
+    def __init__(self, title, content, links):
         self.title = title
         self.content = content
-        self.link = link
+        self.links = links
 
 
 web_service = requests.get("https://medium.com")
@@ -16,20 +16,23 @@ base_url = "https://medium.com"
 arr_webscrappers = []
 
 
-totalcontent = soup.find_all("div", class_="al db")
-print(totalcontent)
-# for data in totalcontent:
-#     content_tag = data.find("h3")
-#     h2_tag = data.find("h2")
-#     link_tag = data.findAll("a", href=True)
-#     title = h2_tag.text
-#     content = content_tag.text
-#     links = []
-#     for link in link_tag:
-#         links.append(link['href'])
-#     arr_webscrappers.append(WebDataInfo(title, content, links))
+totalcontent = soup.find_all("div", class_="pw-homefeed-item")
+for data in totalcontent:
+    content_tag = data.find("h3", class_="by b eg ca cx ka js jt kb jv jx ik")
+    h2_tag = data.find("h2")
+    a_tags = data.findAll("a", href=True)
+    title = h2_tag.text
+    content = content_tag.text
+    links = []
+    for a_tag in a_tags:
+        link = a_tag['href']
+        if (link.startswith('/')):
+            link = base_url + link
+        links.append(link)
+    arr_webscrappers.append(WebDataInfo(title, content, links))
 
-
-print(arr_webscrappers)
+print(len(arr_webscrappers))
+# print(vars(arr_webscrappers[0]['links']))
+print(arr_webscrappers[0].links)
 # for obj in arr_webscrappers:
 #     print(vars(obj))
