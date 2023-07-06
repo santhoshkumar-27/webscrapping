@@ -1,37 +1,66 @@
 import time
-
+import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-browser = webdriver.Chrome()
+import mysql.connector
 
-browser.get("https://medium.com")
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="SmartWork_1234",
+    database="webscrapping"
+)
+mycursor = mydb.cursor()
+base_url = "https://medium.com"
+arr_webscrappers = []
+
+
+class WebDataInfo:
+    def __init__(self, title, content, links, imgUrl):
+        self.title = title
+        self.content = content
+        self.links = links
+        self.imageLink = imgUrl
+
+
+driver = webdriver.Chrome()
+driver.maximize_window()
+driver.get("https://medium.com")
 time.sleep(1)
-elem = browser.find_element(By.TAG_NAME, "body")
-# myLink = browser.find_element(By.CLASS_NAME, 'mm')
-# myLink.click()
-no_of_pagedowns = 20
+elem = driver.find_element(By.TAG_NAME, "body")
+no_of_pagedowns = 25
 while no_of_pagedowns:
     elem.send_keys(Keys.PAGE_DOWN)
-    # myLink.click()
-    # Find the parent element
-    parent_element = browser.find_element(By.CLASS_NAME, "mm")
-
-    child_element = WebDriverWait(parent_element, 10).until(
-        EC.presence_of_element_located((By.TAG_NAME, "button"))
-    )
-    # Find the child element within the parent element
-    # child_element = parent_element.find_element(By.TAG_NAME, "button")
-
-    # Click on the child element
-    child_element.click()
     time.sleep(1)
     no_of_pagedowns -= 1
 
+post_elems = driver.find_elements(By.CLASS_NAME, "pw-homefeed-item")
+for post in post_elems:
+    title = post.find_element(By.TAG_NAME, 'h2').text
+    contents = post.find_elements(By.TAG_NAME, 'h3')
+    for cont in contents:
+        content = cont.text
+    elems = post.find_elements(By.TAG_NAME, 'a')
+    imgUrls = post.find_elements(By.TAG_NAME, 'img')
+    imgUrl = ''
+    for url in imgUrls:
+        if (url.get_attribute('alt') == title):
+            imgUrl = url.get_attribute('src')
+            break
 
-post_elems = browser.find_element(By.CLASS_NAME, "pw-homefeed-item")
-print(post_elems)
-# for post in post_elems:
-#     print(post.text)
+    linksElementCollection = [elem.get_attribute('href') for elem in elems]
+    links = []
+    for link in linksElementCollection:
+        if (link.startswith('/')):
+            link = base_url + link
+        links.append(link)
+    arr_webscrappers.append(WebDataInfo(title, content, links, imgUrl))
+
+for obj in arr_webscrappers:
+    sql = "INSERT INTO medium_site (title, content, links, imgLink) VALUES (%s, %s, %s, %s)"
+    val = (obj.title, obj.content, json.dumps(obj.links), imgUrl)
+    mycursor.execute(sql, val)
+print(len(arr_webscrappers))
+
+mydb.commit()
