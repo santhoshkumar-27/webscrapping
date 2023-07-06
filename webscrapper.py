@@ -1,7 +1,16 @@
 import requests
 from bs4 import BeautifulSoup
+import json
+import mysql.connector
 
-
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="SmartWork_1234",
+  database="webscrapping"
+)
+mycursor = mydb.cursor()
+# print(vars(mydb))
 class WebDataInfo:
     def __init__(self, title, content, links):
         self.title = title
@@ -31,8 +40,13 @@ for data in totalcontent:
         links.append(link)
     arr_webscrappers.append(WebDataInfo(title, content, links))
 
-print(len(arr_webscrappers))
+# print(len(arr_webscrappers))
 # print(vars(arr_webscrappers[0]['links']))
-print(arr_webscrappers[0].links)
-# for obj in arr_webscrappers:
-#     print(vars(obj))
+# print(arr_webscrappers[0].content)
+
+for obj in arr_webscrappers:
+    sql = "INSERT INTO medium_site (title, content, links) VALUES (%s, %s, %s)"
+    val = (obj.title, obj.content, json.dumps(obj.links))
+    mycursor.execute(sql, val)
+
+mydb.commit()
